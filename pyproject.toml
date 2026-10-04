@@ -1,0 +1,17 @@
+[project]
+name = "go-to-ai-engineering"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Danil Sheen",email = "dan.80956@gmail.com"}
+]
+requires-python = ">=3.12"
+dependencies = [
+    "python-dotenv (>=1.2.4,<2.0.0)",
+    "openai (>=3.24.0,<4.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
