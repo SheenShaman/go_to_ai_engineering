@@ -1,5 +1,6 @@
 from typing import Any
 
+
 def get_weather(city: str) -> dict[str, Any]:
     """
     Fake weather tool.
@@ -27,5 +28,5 @@ def get_weather(city: str) -> dict[str, Any]:
         {
             "temperature": None,
             "condition": None,
-        }
+        },
     )
