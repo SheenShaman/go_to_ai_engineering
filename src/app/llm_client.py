@@ -4,9 +4,9 @@
 
 from openai import OpenAI
 
-from app.config import OPEN_ROUTER_KEY
+from app.constants import OPEN_ROUTER_URL, OPEN_ROUTER_KEY
 
 client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
+    base_url=OPEN_ROUTER_URL,
     api_key=OPEN_ROUTER_KEY,
 )

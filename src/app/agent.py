@@ -1,146 +1,118 @@
 import json
-from pydantic import ValidationError
-
-from app.config import SYSTEM_PROMPT
-from app.tool_definition import TOOLS
-from app.tool_registry import TOOL_REGISTRY
-from app.llm import client
-from app.output_models import AgentResponse
 
 from openai import RateLimitError
 
-# Нужно ли уточнение, если я не указал город?
-MODELS = [
-    "xingchen-agi/xing4.0-29b-a4b:free",
-    "dots-studio/dots-3-note-preview:free",
-    "recursive/flint-v1.0:free",
-]
-
-RESPONSE_FORMAT = {
-    "type": "json_schema",
-    "name": "agent_response",
-    "strict": True,
-    "schema": {
-        "type": "object",
-        "properties": {
-            "answer": {
-                "type": "string",
-            },
-            "needs_follow_up": {
-                "type": "boolean",
-            },
-        },
-        "required": ["answer", "needs_follow_up"],
-        "additionalProperties": False,
-    },
-}
+from app.constants import SYSTEM_PROMPT_WITH_TOOLS_AGENT, MODEL, MAX_TOOL_ROUNDS
+from app.llm_client import client
+from app.tool_calling.tool_definition import TOOLS
+from app.tool_calling.tool_registry import TOOL_REGISTRY
+from app.logging import logger
+from app.schemas import MessageHistory
 
 
 def run_agent(
-    user_message: str,
-    history: list | None = None,
-    *,
+    user_query: MessageHistory,
     stream: bool = True,
-    structured: bool = False,
-) -> str | AgentResponse:
-    if history is None:
-        history = []
+) -> str:
 
     input_items = [
-        *history,
-        {
-            "role": "user",
-            "content": user_message,
-        },
+        *user_query.history,
+        {"role": "user", "content": user_query.message},
     ]
 
-    for model in MODELS:
+    # Этап 1. Вызываем модель и обрабатываем инструменты.
+    for round_number in range(MAX_TOOL_ROUNDS):
         try:
-            while True:
-                request = {
-                    "model": model,
-                    "instructions": SYSTEM_PROMPT,
-                    "input": input_items,
-                    "tools": TOOLS,
-                    "tool_choice": "required",
-                    # "extra_body": {
-                    #     "provider": {
-                    #         "require_parameters": True,
-                    #     },
-                    # },
-                }
-                if structured:
-                    request["text"] = {
-                        "format": RESPONSE_FORMAT,
-                    }
+            response = client.responses.create(
+                model=MODEL,
+                instructions=SYSTEM_PROMPT_WITH_TOOLS_AGENT,
+                input=input_items,
+                tools=TOOLS,
+                tool_choice="auto",
+            )
+        except RateLimitError:
+            raise
 
-                if stream and not structured:
-                    response_stream = client.responses.create(
-                        **request,
-                        stream=True,
-                    )
+        tool_calls = [item for item in response.output if item.type == "function_call"]
 
-                    response = None
+        # Модель не запросила инструменты — переходим
+        # к генерации финального ответа.
+        if not tool_calls:
+            break
 
-                    for event in response_stream:
-                        if event.type == "response.output_text.delta":
-                            print(event.delta, end="", flush=True)
-                        elif event.type == "response.completed":
-                            response = event.response
+        # Сохраняем вызовы модели перед передачей результатов.
+        input_items.extend(response.output)
 
-                    if response is None:
-                        raise RuntimeError("Stream ended without a completed response")
+        for tool_call in tool_calls:
+            logger.info(f"[Tool] {tool_call.name}")
 
-                else:
-                    response = client.responses.create(**request)
+            tool = TOOL_REGISTRY.get(tool_call.name)
 
-                input_items.extend(response.output)
-
-                tool_calls = [
-                    item for item in response.output if item.type == "function_call"
-                ]
-                for item in response.output:
-                    print("Model", model)
-                    print("TYPE:", item.type)
-                    print("ITEM:", item)
-
-                if not tool_calls:
-                    answer = response.output_text
-                    print(repr(answer))
-
-                    if structured:
-                        try:
-                            result = AgentResponse.model_validate_json(answer)
-                            history[:] = input_items
-                            return result
-                        except ValidationError as e:
-                            print(f"Некорректный structured output: {e}")
-                            print(f"Ответ модели: {answer!r}")
-                            raise
-
-                    history[:] = input_items
-                    return answer
-
-                for tool_call in tool_calls:
-                    tool = TOOL_REGISTRY.get(tool_call.name)
-
-                    if tool is None:
-                        raise ValueError(f"Unknow tool: {tool_call.name}")
-
+            if tool is None:
+                result = {"error": f"Unknown tool: {tool_call.name}"}
+            else:
+                try:
                     arguments = json.loads(tool_call.arguments)
                     result = tool(**arguments)
+                except Exception as exc:
+                    result = {"error": str(exc)}
+            logger.info(f"[Tool result] {result}")
 
-                    input_items.append(
-                        {
-                            "type": "function_call_output",
-                            "call_id": tool_call.call_id,
-                            "output": json.dumps(
-                                result, ensure_ascii=False, default=str
-                            ),
-                        }
-                    )
+            input_items.append(
+                {
+                    "type": "function_call_output",
+                    "call_id": tool_call.call_id,
+                    "output": json.dumps(
+                        result,
+                        ensure_ascii=False,
+                        default=str,
+                    ),
+                }
+            )
 
-        except RateLimitError:
-            continue
+    # Этап 2. Генерируем финальный ответ.
+    # На этом этапе новые вызовы инструментов запрещены.
+    try:
+        final_stream = client.responses.create(
+            model=MODEL,
+            instructions=SYSTEM_PROMPT_WITH_TOOLS_AGENT,
+            input=input_items,
+            tools=TOOLS,
+            tool_choice="none",
+            stream=stream,
+        )
+    except RateLimitError:
+        raise
 
-    raise RuntimeError("All configured models failed with rate limits.")
+    if not stream:
+        answer = final_stream.output_text
+        logger.info(f"[Answer] {answer}")
+        user_query.history[:] = input_items + [{"role": "assistant", "content": answer}]
+        return answer
+
+    chunks = []
+    completed_response = None
+
+    for event in final_stream:
+        if event.type == "response.output_text.delta":
+            chunks.append(event.delta)
+            # logger.info(f"[Stream] {event.delta}")
+
+        elif event.type == "response.completed":
+            completed_response = event.response
+
+        elif event.type in ("response.failed", "error"):
+            raise RuntimeError(f"Streaming error: {event}")
+
+    answer = "".join(chunks)
+
+    if completed_response is not None:
+        input_items.extend(completed_response.output)
+
+    user_query.history[:] = input_items + (
+        []
+        if completed_response is not None
+        else [{"role": "assistant", "content": answer}]
+    )
+
+    return answer

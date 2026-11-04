@@ -11,7 +11,7 @@ TOOLS = [
             "properties": {
                 "city": {
                     "type": "string",
-                    "description": "City name, for example Amsterdam",
+                    "description": "City name, for example Амстердам",
                 }
             },
             "required": ["city"],
