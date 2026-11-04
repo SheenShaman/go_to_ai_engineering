@@ -1,16 +1,13 @@
-from sentence_transformers import SentenceTransformer
 import hashlib
 from pathlib import Path
 
 import psycopg
 from pgvector.psycopg import register_vector
+from psycopg import connect
+from sentence_transformers import SentenceTransformer
 
 from app.constants import DATABASE_URL, VECTORS_MODEL
-from app.schemas import ChunksConfig
-from psycopg import connect
-
-from app.schemas import Chunk
-
+from app.schemas import Chunk, ChunksConfig
 
 model = SentenceTransformer(VECTORS_MODEL)
 

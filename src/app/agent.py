@@ -2,12 +2,12 @@ import json
 
 from openai import RateLimitError
 
-from app.constants import SYSTEM_PROMPT_WITH_TOOLS_AGENT, MODEL, MAX_TOOL_ROUNDS
+from app.constants import MAX_TOOL_ROUNDS, MODEL, SYSTEM_PROMPT_WITH_TOOLS_AGENT
 from app.llm_client import client
-from app.tool_calling.tool_definition import TOOLS
-from app.tool_calling.tool_registry import TOOL_REGISTRY
 from app.logging import logger
 from app.schemas import MessageHistory
+from app.tool_calling.tool_definition import TOOLS
+from app.tool_calling.tool_registry import TOOL_REGISTRY
 
 
 def run_agent(
@@ -31,7 +31,7 @@ def run_agent(
                 tool_choice="auto",
             )
         except RateLimitError:
-            raise
+            raise RuntimeError(f"Streaming error: {round_number}")
 
         tool_calls = [item for item in response.output if item.type == "function_call"]
 
@@ -82,7 +82,7 @@ def run_agent(
             stream=stream,
         )
     except RateLimitError:
-        raise
+        raise RuntimeError
 
     if not stream:
         answer = final_stream.output_text
