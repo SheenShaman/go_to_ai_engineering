@@ -17,4 +17,4 @@ def test_agent(user_message: str):
 
 print(test_agent("Какая погода в Амстердаме?"))
 print(test_agent("Какая погода в Москве?"))
-print(test_agent("Мне нужно передать название города?"))
+print(test_agent("Какая погода?"))

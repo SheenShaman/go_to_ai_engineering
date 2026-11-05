@@ -11,7 +11,10 @@ TOOLS = [
             "properties": {
                 "city": {
                     "type": "string",
-                    "description": "City name, for example Амстердам",
+                    "description": (
+                        "Название города на русском языке. "
+                        "Например: Амстердам, Лондон или Берлин."
+                    ),
                 }
             },
             "required": ["city"],
