@@ -4,19 +4,19 @@ from openai import RateLimitError
 from app.constants import MAX_TOOL_ROUNDS, MODEL, SYSTEM_PROMPT_WITH_TOOLS_AGENT
 from app.llm_client import client
 from app.logging import logger
-from app.schemas import MessageHistory
+from app.schemas import UsersQuery
 from app.tool_calling.tool_schemas import TOOLS
 from app.tool_calling.tool_registry import TOOL_REGISTRY
 
 
 def run_agent(
-    user_query: MessageHistory,
+    user_query: UsersQuery,
     stream: bool = True,
 ) -> str:
 
     input_items = [
-        *user_query.history,
-        {"role": "user", "content": user_query.message},
+        *user_query.users_history,
+        {"role": "user", "content": user_query.users_message},
     ]
     tool_rounds = 0
 
@@ -116,6 +116,6 @@ def run_agent(
         logger.info(f"[Answer] {answer}")
 
         input_items.extend(response.output)
-        user_query.history[:] = input_items
+        user_query.users_history[:] = input_items
 
         return answer
