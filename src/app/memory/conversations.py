@@ -1,13 +1,15 @@
+import json
+
 import psycopg
 
-import json
 from app.constants import DATABASE_URL
 from app.logging import logger
-from app.schemas import Conversation, Message
+from app.schemas.conversations import ReadConversation
+from app.schemas.messages import Message
 
 
 # Conversations
-def get_conversation_by_user_id(user_id: int) -> Conversation:
+def get_conversation_by_user_id(user_id: int) -> ReadConversation:
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -20,7 +22,7 @@ def get_conversation_by_user_id(user_id: int) -> Conversation:
             )
             row = cur.fetchone()
 
-    return Conversation(
+    return ReadConversation(
         id=row[0],
         user_id=row[1],
         title=row[2],
@@ -29,9 +31,7 @@ def get_conversation_by_user_id(user_id: int) -> Conversation:
     )
 
 
-def create_conversation(
-        conversation: Conversation
-) -> int:
+def create_conversation(conversation: ReadConversation) -> int:
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -90,8 +90,8 @@ def get_messages_by_conversation_id(conversation_id: int) -> list[Message]:
 
 
 def create_message(
-        conversation: Conversation,
-        message: Message,
+    conversation: ReadConversation,
+    message: Message,
 ) -> int:
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
@@ -108,16 +108,21 @@ def create_message(
                 logger.info("Conversation not found")
                 message.conversation_id = create_conversation(conversation)
 
-            content_to_json = json.dumps(message.content, ensure_ascii=False,
-                                         indent=4)
+            content_to_json = json.dumps(
+                message.content, ensure_ascii=False, indent=4
+            )
             cur.execute(
                 """
                 INSERT INTO messages (id, conversation_id, role, content)
                 VALUES (%s, %s, %s, %s)
                 RETURNING id
                 """,
-                (message.id, message.conversation_id, message.role,
-                 content_to_json)
+                (
+                    message.id,
+                    message.conversation_id,
+                    message.role,
+                    content_to_json,
+                ),
             )
             row = cur.fetchone()
 

@@ -1,12 +1,13 @@
 import json
+
 from openai import RateLimitError
 
 from app.constants import MAX_TOOL_ROUNDS, MODEL, SYSTEM_PROMPT_WITH_TOOLS_AGENT
 from app.llm_client import client
 from app.logging import logger
 from app.schemas import UsersQuery
-from app.tool_calling.tool_schemas import TOOLS
 from app.tool_calling.tool_registry import TOOL_REGISTRY
+from app.tool_calling.tool_schemas import TOOLS
 
 
 def run_agent(
@@ -62,14 +63,17 @@ def run_agent(
             raise RateLimitError
 
         # Сценарий 1. Модель запросила инструменты.
-        tool_calls = [item for item in response.output if item.type == "function_call"]
+        tool_calls = [
+            item for item in response.output if item.type == "function_call"
+        ]
 
         if tool_calls:
             if tool_rounds >= MAX_TOOL_ROUNDS:
                 logger.warning("[Agent] Maximum tool rounds exceeded")
 
                 return (
-                    "Не удалось завершить задачу: превышен лимит вызовов инструментов."
+                    "Не удалось завершить задачу: превышен лимит вызовов "
+                    "инструментов."
                 )
 
             # Сохраняем ответ модели с вызовами инструментов.
@@ -88,7 +92,9 @@ def run_agent(
                     try:
                         arguments = json.loads(tool_call.arguments)
                         if not isinstance(arguments, dict):
-                            raise ValueError("Tool arguments must be a Json object")
+                            raise ValueError(
+                                "Tool arguments must be a Json object"
+                            )
                         result = tool(**arguments)
 
                     except Exception as exception:
