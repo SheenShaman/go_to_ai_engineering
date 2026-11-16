@@ -4,8 +4,8 @@ Conversation service
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories.conversations import ConversationsRepo
-from app.schemas.conversations import (
+from src.app.repositories.conversations import ConversationsRepo
+from src.app.schemas.conversations import (
     CreateConversation,
     ReadConversation,
     UpdateConversation,

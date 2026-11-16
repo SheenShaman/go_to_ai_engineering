@@ -52,13 +52,13 @@ class Document(Base):
     filename: Mapped[str] = mapped_column(nullable=False)
     content_hash: Mapped[str] = mapped_column(unique=True)
 
+
 class Chunk(Base):
     __tablename__ = "chunks"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     document_id: Mapped[int] = mapped_column(
-        ForeignKey("documents.id", ondelete="CASCADE"),
-        nullable=False
+        ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
     )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)

@@ -2,12 +2,12 @@ import json
 
 from openai import RateLimitError
 
-from app.constants import MAX_TOOL_ROUNDS, MODEL, SYSTEM_PROMPT_WITH_TOOLS_AGENT
-from app.llm_client import client
-from app.logging import logger
-from app.schemas import UsersQuery
-from app.tool_calling.tool_registry import TOOL_REGISTRY
-from app.tool_calling.tool_schemas import TOOLS
+from src.app.constants import MAX_TOOL_ROUNDS, MODEL, SYSTEM_PROMPT_WITH_TOOLS_AGENT
+from src.app.llm_client import client
+from src.app.logging import logger
+from src.app.schemas import UsersQuery
+from src.app.tool_calling.tool_registry import TOOL_REGISTRY
+from src.app.tool_calling.tool_schemas import TOOLS
 
 
 def run_agent(

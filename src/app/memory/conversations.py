@@ -2,10 +2,10 @@ import json
 
 import psycopg
 
-from app.constants import DATABASE_URL
-from app.logging import logger
-from app.schemas.conversations import ReadConversation
-from app.schemas.messages import Message
+from src.app.constants import DATABASE_URL
+from src.app.logging import logger
+from src.app.schemas.conversations import ReadConversation
+from src.app.schemas.messages import Message
 
 
 # Conversations

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api import conversations
+from src.app.api import conversations
 
 app = FastAPI()
 

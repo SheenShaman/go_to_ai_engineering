@@ -6,8 +6,8 @@ from pgvector.psycopg import register_vector
 from psycopg import connect
 from sentence_transformers import SentenceTransformer
 
-from app.constants import DATABASE_URL, VECTORS_MODEL
-from app.schemas import Chunk, ChunksConfig
+from src.app.constants import DATABASE_URL, VECTORS_MODEL
+from src.app.schemas import Chunk, ChunksConfig
 
 model = SentenceTransformer(VECTORS_MODEL)
 

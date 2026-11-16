@@ -1,5 +1,5 @@
-from app.rag.embeddings import search_chunks
-from app.rag.generation import generation_answer
+from src.app.rag.embeddings import search_chunks
+from src.app.rag.generation import generation_answer
 
 
 def test_llm_answer(question: str):

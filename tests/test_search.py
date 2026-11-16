@@ -1,4 +1,4 @@
-from app.rag.embeddings import search_chunks
+from src.app.rag.embeddings import search_chunks
 
 simple_question = "Какой индекс по умолчанию в Postgresql?"
 norm_question = "Какие есть индексы?"

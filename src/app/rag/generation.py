@@ -1,6 +1,6 @@
-from app.constants import MODEL, SYSTEM_PROMPT_DOCS_AGENT
-from app.llm_client import client
-from app.schemas import Chunk, GenerationAnswer
+from src.app.constants import MODEL, SYSTEM_PROMPT_DOCS_AGENT
+from src.app.llm_client import client
+from src.app.schemas import Chunk, GenerationAnswer
 
 
 def get_user_prompt(context: list, question: str) -> str:

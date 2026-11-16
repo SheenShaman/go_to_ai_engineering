@@ -11,9 +11,9 @@ delete_conversation -> No content 204
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.session import get_db_session
-from app.schemas.conversations import CreateConversation, ReadConversation
-from app.services.conversations import ConversationService
+from src.app.database.session import get_db_session
+from src.app.schemas.conversations import CreateConversation, ReadConversation
+from src.app.services.conversations import ConversationService
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
